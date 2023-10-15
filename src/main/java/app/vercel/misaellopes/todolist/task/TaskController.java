@@ -52,13 +52,22 @@ public class TaskController {
   }
 
   @PutMapping("/{id}")
-  public TaskModel update(@RequestBody TaskModel taskModel, @PathVariable UUID id, HttpServletRequest request) {
+  public ResponseEntity update(@RequestBody TaskModel taskModel, @PathVariable UUID id, HttpServletRequest request) {
 
     var task = this.taskRepository.findById(id).orElse(null);
 
-    Utils.copyNonNullProperties(taskModel, task);
+    if (task == null) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Task not found!");
+    }
+    var userID = request.getAttribute("userID");
 
-    return this.taskRepository.save(task);
+    if (!task.getUserID().equals(userID)) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Permission denied for this user on trying to update this task!");
+    }
+
+    Utils.copyNonNullProperties(taskModel, task);
+    var updatedTask = this.taskRepository.save(task);
+    return ResponseEntity.status(HttpStatus.OK).body(updatedTask);
   }
 
   
